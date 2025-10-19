@@ -1,0 +1,81 @@
+# trump_cards.py
+import sys
+from itertools import product
+from typing import List, Dict, Optional, Tuple
+from csp import CSP, Constraint
+
+def pretty_print(row: List[str]) -> None:
+    print('|' + '|'.join(['{:18s}'.format(s) for s in row]) + '|')
+    #print(''.join(['{:20s}'.format(s) for s in row]))
+
+def all_distinct(d: Dict[str, Tuple[int, int]]) -> bool:
+    vals: List[Tuple[int, int]] = [d[k] for k in d]
+    i: int ; j : int
+    for i in range(len(vals)):
+        for j in range(i + 1, len(vals)):
+            if not set(vals[i]).isdisjoint(vals[j]):
+                return False
+    return True
+    
+def is_boy(name: str) -> bool:
+    return name in ['john', 'luke', 'mark', 'matthew', 'nicholas', 'noel']
+
+def is_girl(name: str) -> bool:
+    return name in ['angela', 'carole', 'holly', 'ivy', 'joy', 'mary']
+
+def is_even(n: int) -> bool:
+    return n % 2 == 0
+
+def is_odd(n: int) -> bool:
+    return n % 2 == 1
+
+class LogicPuzzleConstraint(Constraint[str, Tuple[int,int]]):
+    def __init__(self, names: List[str]) -> None:
+        super().__init__(names)
+        self.names: List[str] = names
+        
+    def satisfied(self, assignment: Dict[str, Tuple[int, int]]) -> bool:
+        if not all_distinct(assignment):
+            return False
+        if len(assignment) < 12:
+            return True        
+       
+        boy_houses = [ assignment[name][0] for name in assignment if is_boy(name) ]
+        girl_houses = [ assignment[name][0] for name in assignment if is_girl(name) ]
+        boy_dates = [ assignment[name][1] for name in assignment if is_boy(name) ]
+        girl_dates = [ assignment[name][1] for name in assignment if is_girl(name) ]
+
+        houses = { k : v[0] for k, v in assignment.items() }
+        dates = { k: v[1] for k, v in assignment.items() }
+        house_dates = { house: date for house, date in assignment.values() }
+        date_houses = { date: house for house, date in assignment.values() }
+        #print(house_dates)
+        #print(date_houses)
+        
+        #print(girl_dates)
+        # 1.
+        #if 10 not in girl_dates or 7 not in girl_houses:
+        #    return False
+        # 2.
+        if dates['nicholas'] != house_dates[3] + 1:
+            print(assignment)
+            return False
+        return True
+
+if __name__ == "__main__":
+    house_nos: List[int] = list(range(1, 13))
+    names: List[str] = [ 'john', 'luke', 'mark', 'matthew', 'nicholas', 'noel', 'angela', 'carole', 'holly', 'ivy', 'joy', 'mary' ]
+    dates: List[int] = list(range(1, 13))
+    domains: Dict[str, List[Tuple[int, int]]] = { name: [t for t in product(house_nos, dates)] for name in names }
+    csp: CSP[str, Tuple[int, int]] = CSP(names, domains)
+    csp.add_constraint(LogicPuzzleConstraint(names))
+    solution: Optional[Dict[str, Tuple[int, int]]] = csp.backtracking_search()
+    if solution is None:
+        print("No solution found!")
+    else:
+        print("Solution found!")
+        print(solution)
+        #headers: List[str] = ["House Nos.", "Names", "Dates"]
+        #pretty_print(headers)
+        #for row in solution:
+        #    pretty_print(solution[row])
